@@ -1,0 +1,11 @@
+MIME-Version: 1.0
+Date: Mon, 26 Oct 2026 09:05:00 +0000
+Message-ID: <html-only@example.com>
+Subject: HTML only, no text/plain part
+From: Alice Example <alice@example.com>
+To: Bob Example <bob@example.org>
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<html><body><h1>Weekly update</h1><p>Nothing to report =E2=80=94 see you=
+ next week.</p><ul><li>One</li><li>Two</li></ul></body></html>

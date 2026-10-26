@@ -1,0 +1,12 @@
+[package]
+name = "rapid-parser"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+[features]
+display = []
+
+[dev-dependencies]
+insta = { version = "1.49.0", features = ["json", "glob"] }

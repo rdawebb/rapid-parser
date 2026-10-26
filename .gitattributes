@@ -1,0 +1,2 @@
+# Fixtures are byte-exact input: no line-ending conversion on Windows checkouts.
+*.eml -text

@@ -1,0 +1,11 @@
+MIME-Version: 1.0
+Date: Mon, 26 Oct 2026 09:15:00 +0200
+Message-ID: <rfc2047@example.com>
+Subject: =?utf-8?b?Q2Fmw6kg4piVIG1lZXRpbmcg?=
+ =?iso-8859-1?q?=E0_demain?=
+From: =?ISO-8859-1?Q?Ren=E9_Fran=E7ois?= <rene@example.com>
+To: =?UTF-8?Q?Zo=C3=AB_M=C3=BCller?= <zoe@example.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+
+Expected subject: "Café ☕ meeting à demain".
