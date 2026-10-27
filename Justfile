@@ -1,5 +1,3 @@
-set working-directory := "rapid-parser"
-
 # Format Rust code
 format:
     cargo fmt

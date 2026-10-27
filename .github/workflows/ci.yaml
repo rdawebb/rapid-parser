@@ -8,10 +8,6 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
-defaults:
-  run:
-    working-directory: rapid-parser
-
 jobs:
   test:
     name: test (${{ matrix.os }})
