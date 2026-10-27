@@ -1,2 +1,5 @@
-# Fixtures are byte-exact input: no line-ending conversion on Windows checkouts.
+# Fixtures are byte-exact input: no line-ending conversion on Windows checkouts
 *.eml -text
+
+# Maildir messages have no extension
+**/fixtures/maildir/** -text

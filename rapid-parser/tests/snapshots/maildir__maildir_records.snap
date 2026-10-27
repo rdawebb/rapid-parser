@@ -1,0 +1,84 @@
+---
+source: tests/maildir.rs
+expression: records
+---
+[
+  {
+    "attachments": [],
+    "body_text": "Not yet read.\n",
+    "cc": [],
+    "date": "2026-10-26T10:00:00Z",
+    "flags": [],
+    "folder": "INBOX",
+    "from": [
+      {
+        "address": "alice@example.com",
+        "name": "Alice"
+      }
+    ],
+    "in_reply_to": [],
+    "message_id": "inbox-new@example.com",
+    "references": [],
+    "subject": "New in inbox",
+    "to": [
+      {
+        "address": "bob@example.org",
+        "name": "Bob"
+      }
+    ]
+  },
+  {
+    "attachments": [],
+    "body_text": "Already read.\n",
+    "cc": [],
+    "date": "2026-10-26T10:00:00Z",
+    "flags": [
+      "seen"
+    ],
+    "folder": "INBOX",
+    "from": [
+      {
+        "address": "alice@example.com",
+        "name": "Alice"
+      }
+    ],
+    "in_reply_to": [],
+    "message_id": "inbox-seen@example.com",
+    "references": [],
+    "subject": "Seen in inbox",
+    "to": [
+      {
+        "address": "bob@example.org",
+        "name": "Bob"
+      }
+    ]
+  },
+  {
+    "attachments": [],
+    "body_text": "Flagged and replied.\n",
+    "cc": [],
+    "date": "2026-10-26T10:00:00Z",
+    "flags": [
+      "flagged",
+      "replied",
+      "seen"
+    ],
+    "folder": "Work",
+    "from": [
+      {
+        "address": "alice@example.com",
+        "name": "Alice"
+      }
+    ],
+    "in_reply_to": [],
+    "message_id": "work-flagged@example.com",
+    "references": [],
+    "subject": "Flagged at work",
+    "to": [
+      {
+        "address": "bob@example.org",
+        "name": "Bob"
+      }
+    ]
+  }
+]

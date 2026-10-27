@@ -2,8 +2,10 @@
 
 use std::borrow::Cow;
 use std::io::{self, Write};
+use std::path::Path;
 
-use mail_parser::{AddressList, Message};
+use mail_parser::mailbox::maildir::{Flag, FolderIterator};
+use mail_parser::{AddressList, Message, MessageBuffers, MessageParser};
 use serde::Serialize;
 
 /// One message per Record
@@ -74,6 +76,60 @@ pub fn record<'a>(msg: &'a Message<'_>) -> Record<'a> {
                 inline: p.is_inline(),
             })
             .collect(),
+    }
+}
+
+/// A Maildir message: its record plus location and flags
+#[derive(Debug, Serialize)]
+pub struct MaildirRecord<'a> {
+    /// Maildir++ folder name, `INBOX` for the root
+    pub folder: &'a str,
+    pub flags: Vec<&'static str>,
+    #[serde(flatten)]
+    pub record: Record<'a>,
+}
+
+/// Calls `f` with the record of every message in a Maildir++ tree (`cur/` and
+/// `new/` of the root and of every `.`-prefixed subfolder); records borrow
+/// parse buffers that are reused for the next message
+pub fn read_maildir(
+    root: impl AsRef<Path>,
+    mut f: impl FnMut(MaildirRecord<'_>) -> io::Result<()>,
+) -> io::Result<()> {
+    let parser = MessageParser::default();
+    let mut buffers = MessageBuffers::new();
+    for folder in FolderIterator::new(root.as_ref(), Some("."))? {
+        let folder = folder?;
+        let name = folder.name().unwrap_or("INBOX").to_owned();
+        for entry in folder {
+            let entry = entry?;
+            let msg = parser
+                .parse_with(entry.contents(), &mut buffers)
+                .ok_or_else(|| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!("unparseable message: {}", entry.path().display()),
+                    )
+                })?;
+            f(MaildirRecord {
+                folder: &name,
+                flags: entry.flags().iter().map(|&fl| flag_name(fl)).collect(),
+                record: record(&msg),
+            })?;
+            buffers = msg.into_buffers();
+        }
+    }
+    Ok(())
+}
+
+fn flag_name(flag: Flag) -> &'static str {
+    match flag {
+        Flag::Passed => "passed",
+        Flag::Replied => "replied",
+        Flag::Seen => "seen",
+        Flag::Trashed => "trashed",
+        Flag::Draft => "draft",
+        Flag::Flagged => "flagged",
     }
 }
 
