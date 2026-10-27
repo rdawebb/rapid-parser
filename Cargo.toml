@@ -6,10 +6,21 @@ edition = "2024"
 [dependencies]
 mail-parser = { version = "1.0.0", features = ["full_encoding"] }
 serde = { version = "1.0.229", features = ["derive"] }
-serde_json = "1.0.154"
+serde_json = { version = "1.0.154", optional = true }
 
 [features]
+default = ["ndjson"]
 display = []
+ndjson = ["dep:serde_json"]
 
 [dev-dependencies]
 insta = { version = "1.49.0", features = ["json", "glob"] }
+mailparse = "0.18.0"
+memchr = "2.8.3"
+memmap2 = "0.9.12"
+serde_json = "1.0.154"
+
+[[bench]]
+name = "ingest"
+harness = false
+required-features = ["ndjson"]

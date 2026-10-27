@@ -1,7 +1,7 @@
 //! A JSON snapshot of the record of every `.eml` fixture.
 
 use mail_parser::MessageParser;
-use rapid_parser::{record, write_ndjson};
+use rapid_parser::record;
 
 #[test]
 fn fixture_records() {
@@ -12,8 +12,11 @@ fn fixture_records() {
     });
 }
 
+#[cfg(feature = "ndjson")]
 #[test]
 fn ndjson_is_one_object_per_line() {
+    use rapid_parser::write_ndjson;
+
     let raw = std::fs::read("tests/fixtures/eml/html-only.eml").unwrap();
     let msg = MessageParser::default().parse(&raw).unwrap();
     let mut out = Vec::new();

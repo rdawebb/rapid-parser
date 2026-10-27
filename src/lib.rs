@@ -2,7 +2,7 @@
 
 use std::borrow::Cow;
 use std::fs::File;
-use std::io::{self, BufReader, Write};
+use std::io::{self, BufReader};
 use std::path::Path;
 
 use mail_parser::decoders::html::html_to_text;
@@ -88,13 +88,17 @@ fn body_text<'a>(msg: &'a Message<'_>) -> Option<Cow<'a, str>> {
     let part = msg.text_body().next()?;
     let text = part.text()?;
     match part.kind() {
-        PartKind::Html => Some(Cow::Owned(
-            html_to_text(&break_blocks(&text))
-                .lines()
-                .filter(|l| !l.trim().is_empty())
-                .collect::<Vec<_>>()
-                .join("\n"),
-        )),
+        PartKind::Html => {
+            let plain = html_to_text(&break_blocks(&text));
+            let mut out = String::with_capacity(plain.len());
+            for line in plain.lines().filter(|l| !l.trim().is_empty()) {
+                if !out.is_empty() {
+                    out.push('\n');
+                }
+                out.push_str(line);
+            }
+            Some(Cow::Owned(out))
+        }
         PartKind::Text if text.contains('\r') => Some(Cow::Owned(text.replace("\r\n", "\n"))),
         PartKind::Text => Some(text),
         _ => None,
@@ -223,9 +227,10 @@ fn flag_name(flag: Flag) -> &'static str {
 }
 
 /// Writes one JSON object per line
+#[cfg(feature = "ndjson")]
 pub fn write_ndjson<'a>(
     records: impl IntoIterator<Item = Record<'a>>,
-    mut out: impl Write,
+    mut out: impl io::Write,
 ) -> io::Result<()> {
     for r in records {
         serde_json::to_writer(&mut out, &r)?;

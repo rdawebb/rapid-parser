@@ -2,3 +2,6 @@
 dev/
 target/
 .venv/
+datasets/*
+!datasets/README.md
+benches/README.md
