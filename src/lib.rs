@@ -5,9 +5,10 @@ use std::fs::File;
 use std::io::{self, BufReader, Write};
 use std::path::Path;
 
+use mail_parser::decoders::html::html_to_text;
 use mail_parser::mailbox::maildir::{Flag, FolderIterator};
 use mail_parser::mailbox::mbox::MessageIterator;
-use mail_parser::{AddressList, Message, MessageBuffers, MessageParser};
+use mail_parser::{AddressList, Message, MessageBuffers, MessageParser, PartKind};
 use serde::Serialize;
 
 /// One message per Record
@@ -65,7 +66,7 @@ pub fn record<'a>(msg: &'a Message<'_>) -> Record<'a> {
         references: msg
             .references()
             .map_or_else(Vec::new, |l| l.iter().collect()),
-        body_text: msg.body_text(0),
+        body_text: body_text(msg),
         attachments: msg
             .attachments()
             .map(|p| AttachmentMetadata {
@@ -79,6 +80,62 @@ pub fn record<'a>(msg: &'a Message<'_>) -> Record<'a> {
             })
             .collect(),
     }
+}
+
+/// The first text body part, CRLF as LF; mail-parser's `html_to_text` breaks
+/// lines only at `<br>` and `</p>`, so other block tags get a `<br>` first
+fn body_text<'a>(msg: &'a Message<'_>) -> Option<Cow<'a, str>> {
+    let part = msg.text_body().next()?;
+    let text = part.text()?;
+    match part.kind() {
+        PartKind::Html => Some(Cow::Owned(
+            html_to_text(&break_blocks(&text))
+                .lines()
+                .filter(|l| !l.trim().is_empty())
+                .collect::<Vec<_>>()
+                .join("\n"),
+        )),
+        PartKind::Text if text.contains('\r') => Some(Cow::Owned(text.replace("\r\n", "\n"))),
+        PartKind::Text => Some(text),
+        _ => None,
+    }
+}
+
+const BLOCK_TAGS: [&str; 14] = [
+    "p",
+    "div",
+    "br",
+    "li",
+    "tr",
+    "td",
+    "th",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "blockquote",
+];
+
+/// Puts a `<br>` before every opening or closing block tag
+fn break_blocks(html: &str) -> String {
+    let mut out = String::with_capacity(html.len() + html.len() / 8);
+    let mut rest = html;
+    while let Some(i) = rest.find('<') {
+        out.push_str(&rest[..i]);
+        rest = &rest[i + 1..];
+        let tag = rest.strip_prefix('/').unwrap_or(rest);
+        let name = &tag[..tag
+            .find(|c: char| !c.is_ascii_alphanumeric())
+            .unwrap_or(tag.len())];
+        if BLOCK_TAGS.iter().any(|t| t.eq_ignore_ascii_case(name)) {
+            out.push_str("<br>");
+        }
+        out.push('<');
+    }
+    out.push_str(rest);
+    out
 }
 
 /// A Maildir message: its record plus location and flags

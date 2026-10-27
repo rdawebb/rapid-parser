@@ -22,6 +22,6 @@ input_file: tests/fixtures/eml/html-only.eml
   "date": "2026-10-26T09:05:00Z",
   "in_reply_to": [],
   "references": [],
-  "body_text": "Weekly updateNothing to report — see you next week.\nOneTwo",
+  "body_text": "Weekly update\nNothing to report — see you next week.\nOne\nTwo",
   "attachments": []
 }

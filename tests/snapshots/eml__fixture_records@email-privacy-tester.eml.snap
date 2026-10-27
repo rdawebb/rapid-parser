@@ -22,7 +22,7 @@ input_file: tests/fixtures/eml/email-privacy-tester.eml
   "date": "2020-01-09T17:16:49Z",
   "in_reply_to": [],
   "references": [],
-  "body_text": "Email Privacy Tester\n\nThis is your test email from the Email Privacy Tester. Please ignore everything after this line. Clicking on anything will skew the results.\n\n\n\n\n",
+  "body_text": "Email Privacy Tester\nThis is your test email from the Email Privacy Tester. Please ignore everything after this line. Clicking on anything will skew the results.",
   "attachments": [
     {
       "name": "5e175f8d8af4d70022fc5832.css",

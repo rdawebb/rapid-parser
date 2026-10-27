@@ -22,7 +22,7 @@ input_file: tests/fixtures/eml/multipart-related-cid.eml
   "date": "2026-10-26T09:00:00Z",
   "in_reply_to": [],
   "references": [],
-  "body_text": "Our logo:\n",
+  "body_text": "Our logo:",
   "attachments": [
     {
       "name": "logo.png",
