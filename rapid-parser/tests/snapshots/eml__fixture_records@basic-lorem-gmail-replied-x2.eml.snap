@@ -1,0 +1,32 @@
+---
+source: tests/eml.rs
+expression: record(&msg)
+input_file: tests/fixtures/eml/basic-lorem-gmail-replied-x2.eml
+---
+{
+  "message_id": "CAFRK1a=fxcLAFVDESaW7D_y8vaaGZJfdt04gPmUX3GMVZ_EX7g@mail.gmail.com",
+  "subject": "Re: [TEST] Sample Gmail email for tempo-email-parser",
+  "from": [
+    {
+      "name": "Nicolas Gaborit",
+      "address": "hello@soreine.dev"
+    }
+  ],
+  "to": [
+    {
+      "name": "Nicolas Gaborit",
+      "address": "hello@soreine.dev"
+    }
+  ],
+  "cc": [],
+  "date": "2019-12-31T14:59:48+01:00",
+  "in_reply_to": [
+    "CAFRK1amwwxERxdhzDdq-4WtHVFcMCj3q3nJmSt37RYEjKcqpug@mail.gmail.com"
+  ],
+  "references": [
+    "CAFRK1amk-JP6udKvSf9x8+V=bGRNPSXAU7uRUd3-ot-tLPs9hQ@mail.gmail.com",
+    "CAFRK1amwwxERxdhzDdq-4WtHVFcMCj3q3nJmSt37RYEjKcqpug@mail.gmail.com"
+  ],
+  "body_text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. *An hoc usque\r\nquaque, aliter in vita?* Terram, mihi crede, ea lanx et maria deprimet. Duo\r\nReges: constructio interrete. *Id est enim, de quo quaerimus.* Parvi enim\r\nprimo ortu sic iacent, tamquam omnino sine animo sint. Quis est tam\r\ndissimile homini. Claudii libidini, qui tum erat summo ne imperio,\r\ndederetur. Beatus sibi videtur esse moriens. <http://loripsum.net/>\r\n\r\nHoc dixerit potius Ennius: Nimium boni est, cui nihil est mali. Egone\r\nquaeris, inquit, quid sentiam? Si mala non sunt, iacet omnis ratio\r\nPeripateticorum. Itaque rursus eadem ratione, qua sum paulo ante usus,\r\nhaerebitis. Paulum, cum regem Persem captum adduceret, eodem flumine\r\ninvectio? Mihi enim erit isdem istis fortasse iam utendum. Ab hoc autem\r\nquaedam non melius quam veteres, quaedam omnino relicta. Tamen a proposito,\r\ninquam, aberramus.\r\n\r\nSic, et quidem diligentius saepiusque ista loquemur inter nos agemusque\r\ncommuniter. Quid sequatur, quid repugnet, vident. <http://loripsum.net/>\r\nSerpere anguiculos, nare anaticulas, evolare merulas, cornibus uti videmus\r\nboves, nepas aculeis. Ego vero volo in virtute vim esse quam maximam;\r\nAufert enim sensus actionemque tollit omnem. Qua tu etiam inprudens utebare\r\nnon numquam. Apud ceteros autem philosophos, qui quaesivit aliquid, tacet;\r\nTotum autem id externum est, et quod externum, id in casu est.\r\n\r\nOn Tue, Dec 31, 2019 at 2:59 PM Nicolas Gaborit <hello@soreine.dev> wrote:\r\n\r\n> Lorem ipsum dolor sit amet, consectetur adipiscing elit. *An hoc usque\r\n> quaque, aliter in vita?* Terram, mihi crede, ea lanx et maria deprimet.\r\n> Duo Reges: constructio interrete. *Id est enim, de quo quaerimus.* Parvi\r\n> enim primo ortu sic iacent, tamquam omnino sine animo sint. Quis est tam\r\n> dissimile homini. Claudii libidini, qui tum erat summo ne imperio,\r\n> dederetur. Beatus sibi videtur esse moriens. <http://loripsum.net/>\r\n>\r\n> Hoc dixerit potius Ennius: Nimium boni est, cui nihil est mali. Egone\r\n> quaeris, inquit, quid sentiam? Si mala non sunt, iacet omnis ratio\r\n> Peripateticorum. Itaque rursus eadem ratione, qua sum paulo ante usus,\r\n> haerebitis. Paulum, cum regem Persem captum adduceret, eodem flumine\r\n> invectio? Mihi enim erit isdem istis fortasse iam utendum. Ab hoc autem\r\n> quaedam non melius quam veteres, quaedam omnino relicta. Tamen a proposito,\r\n> inquam, aberramus.\r\n>\r\n> Sic, et quidem diligentius saepiusque ista loquemur inter nos agemusque\r\n> communiter. Quid sequatur, quid repugnet, vident. <http://loripsum.net/>\r\n> Serpere anguiculos, nare anaticulas, evolare merulas, cornibus uti videmus\r\n> boves, nepas aculeis. Ego vero volo in virtute vim esse quam maximam;\r\n> Aufert enim sensus actionemque tollit omnem. Qua tu etiam inprudens utebare\r\n> non numquam. Apud ceteros autem philosophos, qui quaesivit aliquid, tacet;\r\n> Totum autem id externum est, et quod externum, id in casu est.\r\n>\r\n> On Tue, Dec 31, 2019 at 12:08 AM Nicolas Gaborit <hello@soreine.dev>\r\n> wrote:\r\n>\r\n>> Lorem ipsum dolor sit amet, consectetur adipiscing elit. *An hoc usque\r\n>> quaque, aliter in vita?* Terram, mihi crede, ea lanx et maria deprimet.\r\n>> Duo Reges: constructio interrete. *Id est enim, de quo quaerimus.* Parvi\r\n>> enim primo ortu sic iacent, tamquam omnino sine animo sint. Quis est tam\r\n>> dissimile homini. Claudii libidini, qui tum erat summo ne imperio,\r\n>> dederetur. Beatus sibi videtur esse moriens. <http://loripsum.net/>\r\n>>\r\n>> Hoc dixerit potius Ennius: Nimium boni est, cui nihil est mali. Egone\r\n>> quaeris, inquit, quid sentiam? Si mala non sunt, iacet omnis ratio\r\n>> Peripateticorum. Itaque rursus eadem ratione, qua sum paulo ante usus,\r\n>> haerebitis. Paulum, cum regem Persem captum adduceret, eodem flumine\r\n>> invectio? Mihi enim erit isdem istis fortasse iam utendum. Ab hoc autem\r\n>> quaedam non melius quam veteres, quaedam omnino relicta. Tamen a proposito,\r\n>> inquam, aberramus.\r\n>>\r\n>> Sic, et quidem diligentius saepiusque ista loquemur inter nos agemusque\r\n>> communiter. Quid sequatur, quid repugnet, vident. <http://loripsum.net/>\r\n>> Serpere anguiculos, nare anaticulas, evolare merulas, cornibus uti videmus\r\n>> boves, nepas aculeis. Ego vero volo in virtute vim esse quam maximam;\r\n>> Aufert enim sensus actionemque tollit omnem. Qua tu etiam inprudens utebare\r\n>> non numquam. Apud ceteros autem philosophos, qui quaesivit aliquid, tacet;\r\n>> Totum autem id externum est, et quod externum, id in casu est.\r\n>>\r\n>\r\n",
+  "attachments": []
+}

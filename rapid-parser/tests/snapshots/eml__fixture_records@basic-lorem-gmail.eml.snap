@@ -1,0 +1,27 @@
+---
+source: tests/eml.rs
+expression: record(&msg)
+input_file: tests/fixtures/eml/basic-lorem-gmail.eml
+---
+{
+  "message_id": "CAFRK1amk-JP6udKvSf9x8+V=bGRNPSXAU7uRUd3-ot-tLPs9hQ@mail.gmail.com",
+  "subject": "[TEST] Sample Gmail email for tempo-email-parser",
+  "from": [
+    {
+      "name": "Nicolas Gaborit",
+      "address": "hello@soreine.dev"
+    }
+  ],
+  "to": [
+    {
+      "name": "Nicolas Gaborit",
+      "address": "hello@soreine.dev"
+    }
+  ],
+  "cc": [],
+  "date": "2019-12-31T00:08:12+01:00",
+  "in_reply_to": [],
+  "references": [],
+  "body_text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. *An hoc usque\r\nquaque, aliter in vita?* Terram, mihi crede, ea lanx et maria deprimet. Duo\r\nReges: constructio interrete. *Id est enim, de quo quaerimus.* Parvi enim\r\nprimo ortu sic iacent, tamquam omnino sine animo sint. Quis est tam\r\ndissimile homini. Claudii libidini, qui tum erat summo ne imperio,\r\ndederetur. Beatus sibi videtur esse moriens. <http://loripsum.net/>\r\n\r\nHoc dixerit potius Ennius: Nimium boni est, cui nihil est mali. Egone\r\nquaeris, inquit, quid sentiam? Si mala non sunt, iacet omnis ratio\r\nPeripateticorum. Itaque rursus eadem ratione, qua sum paulo ante usus,\r\nhaerebitis. Paulum, cum regem Persem captum adduceret, eodem flumine\r\ninvectio? Mihi enim erit isdem istis fortasse iam utendum. Ab hoc autem\r\nquaedam non melius quam veteres, quaedam omnino relicta. Tamen a proposito,\r\ninquam, aberramus.\r\n\r\nSic, et quidem diligentius saepiusque ista loquemur inter nos agemusque\r\ncommuniter. Quid sequatur, quid repugnet, vident. <http://loripsum.net/>\r\nSerpere anguiculos, nare anaticulas, evolare merulas, cornibus uti videmus\r\nboves, nepas aculeis. Ego vero volo in virtute vim esse quam maximam;\r\nAufert enim sensus actionemque tollit omnem. Qua tu etiam inprudens utebare\r\nnon numquam. Apud ceteros autem philosophos, qui quaesivit aliquid, tacet;\r\nTotum autem id externum est, et quod externum, id in casu est.\r\n",
+  "attachments": []
+}

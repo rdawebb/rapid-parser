@@ -1,0 +1,27 @@
+---
+source: tests/eml.rs
+expression: record(&msg)
+input_file: tests/fixtures/eml/html-only.eml
+---
+{
+  "message_id": "html-only@example.com",
+  "subject": "HTML only, no text/plain part",
+  "from": [
+    {
+      "name": "Alice Example",
+      "address": "alice@example.com"
+    }
+  ],
+  "to": [
+    {
+      "name": "Bob Example",
+      "address": "bob@example.org"
+    }
+  ],
+  "cc": [],
+  "date": "2026-10-26T09:05:00Z",
+  "in_reply_to": [],
+  "references": [],
+  "body_text": "Weekly updateNothing to report — see you next week.\nOneTwo",
+  "attachments": []
+}

@@ -1,0 +1,27 @@
+---
+source: tests/eml.rs
+expression: record(&msg)
+input_file: tests/fixtures/eml/rfc2047-headers.eml
+---
+{
+  "message_id": "rfc2047@example.com",
+  "subject": "Café ☕ meeting à demain",
+  "from": [
+    {
+      "name": "René François",
+      "address": "rene@example.com"
+    }
+  ],
+  "to": [
+    {
+      "name": "Zoë Müller",
+      "address": "zoe@example.org"
+    }
+  ],
+  "cc": [],
+  "date": "2026-10-26T09:15:00+02:00",
+  "in_reply_to": [],
+  "references": [],
+  "body_text": "Expected subject: \"Café ☕ meeting à demain\".\n",
+  "attachments": []
+}

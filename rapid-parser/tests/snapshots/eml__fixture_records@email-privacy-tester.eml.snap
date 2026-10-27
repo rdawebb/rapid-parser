@@ -1,0 +1,52 @@
+---
+source: tests/eml.rs
+expression: record(&msg)
+input_file: tests/fixtures/eml/email-privacy-tester.eml
+---
+{
+  "message_id": "ad7e2d62-cc2a-693f-1815-d4360cd52597@emailprivacytester.com",
+  "subject": "EPT - Your Test Email - https://www.emailprivacytester.com/test?code=5e175f8d8af4d70022fc5832",
+  "from": [
+    {
+      "name": "Email Privacy Tester <img src=x onerror='alert(unescape(/%58%53%53%28%33%29%20%66%6f%75%6e%64%2e%20%50%6c%65%61%73%65%20%72%65%70%6f%72%74%20%74%6f%20%78%73%73%40%65%6d%61%69%6c%70%72%69%76%61%63%79%74%65%73%74%65%72%2e%63%6f%6d/.source))'>",
+      "address": "noreply@emailprivacytester.com"
+    }
+  ],
+  "to": [
+    {
+      "name": null,
+      "address": "hello@soreine.dev"
+    }
+  ],
+  "cc": [],
+  "date": "2020-01-09T17:16:49Z",
+  "in_reply_to": [],
+  "references": [],
+  "body_text": "Email Privacy Tester\n\nThis is your test email from the Email Privacy Tester. Please ignore everything after this line. Clicking on anything will skew the results.\n\n\n\n\n",
+  "attachments": [
+    {
+      "name": "5e175f8d8af4d70022fc5832.css",
+      "content_type": "text/css",
+      "size": 124,
+      "inline": true
+    },
+    {
+      "name": "5e175f8d8af4d70022fc5832.svg",
+      "content_type": "image/svg+xml",
+      "size": 0,
+      "inline": true
+    },
+    {
+      "name": "5e175f8d8af4d70022fc5832-2.svg",
+      "content_type": "image/svg+xml",
+      "size": 0,
+      "inline": true
+    },
+    {
+      "name": "<script>alert(unescape(/XSS(2) f%6fund. Please repo%72t to xss@emailprivacytester.com/.source))</script>.5e175f8d8af4d70022fc5832.png",
+      "content_type": "image/png",
+      "size": 0,
+      "inline": true
+    }
+  ]
+}
