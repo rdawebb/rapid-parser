@@ -1,10 +1,12 @@
 //! Parses RFC 5322 / MIME mail into NDJSON records, to be indexed.
 
 use std::borrow::Cow;
-use std::io::{self, Write};
+use std::fs::File;
+use std::io::{self, BufReader, Write};
 use std::path::Path;
 
 use mail_parser::mailbox::maildir::{Flag, FolderIterator};
+use mail_parser::mailbox::mbox::MessageIterator;
 use mail_parser::{AddressList, Message, MessageBuffers, MessageParser};
 use serde::Serialize;
 
@@ -103,14 +105,9 @@ pub fn read_maildir(
         let name = folder.name().unwrap_or("INBOX").to_owned();
         for entry in folder {
             let entry = entry?;
-            let msg = parser
-                .parse_with(entry.contents(), &mut buffers)
-                .ok_or_else(|| {
-                    io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        format!("unparseable message: {}", entry.path().display()),
-                    )
-                })?;
+            let msg = parse(&parser, entry.contents(), &mut buffers, || {
+                entry.path().display().to_string()
+            })?;
             f(MaildirRecord {
                 folder: &name,
                 flags: entry.flags().iter().map(|&fl| flag_name(fl)).collect(),
@@ -120,6 +117,41 @@ pub fn read_maildir(
         }
     }
     Ok(())
+}
+
+/// Calls `f` with the record of every message in an mbox file; mail-parser uses
+/// mboxrd unquoting
+pub fn read_mbox(
+    path: impl AsRef<Path>,
+    mut f: impl FnMut(Record<'_>) -> io::Result<()>,
+) -> io::Result<()> {
+    let path = path.as_ref();
+    let parser = MessageParser::default();
+    let mut buffers = MessageBuffers::new();
+    for (i, entry) in MessageIterator::new(BufReader::new(File::open(path)?)).enumerate() {
+        let entry = entry?;
+        let msg = parse(&parser, entry.contents(), &mut buffers, || {
+            format!("{} (message {})", path.display(), i + 1)
+        })?;
+        f(record(&msg))?;
+        buffers = msg.into_buffers();
+    }
+    Ok(())
+}
+
+/// mail-parser only fails on inputs of 4 GiB or more; names the message
+fn parse<'x>(
+    parser: &MessageParser,
+    raw: &'x [u8],
+    buffers: &mut MessageBuffers,
+    what: impl FnOnce() -> String,
+) -> io::Result<Message<'x>> {
+    parser.parse_with(raw, buffers).ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("unparseable message: {}", what()),
+        )
+    })
 }
 
 fn flag_name(flag: Flag) -> &'static str {

@@ -1,0 +1,19 @@
+From alice@example.com Mon Oct 26 10:00:00 2026
+Message-ID: <mbox-quoted@example.com>
+Date: Mon, 26 Oct 2026 10:00:00 +0000
+From: Alice <alice@example.com>
+To: Bob <bob@example.org>
+Subject: Quoted From lines
+
+First line.
+>From here the separator is escaped.
+>>From here it was already quoted.
+
+From bob@example.org Mon Oct 26 11:00:00 2026
+Message-ID: <mbox-last@example.com>
+Date: Mon, 26 Oct 2026 11:00:00 +0000
+From: Bob <bob@example.org>
+To: Alice <alice@example.com>
+Subject: No trailing newline
+
+Last line, no newline.

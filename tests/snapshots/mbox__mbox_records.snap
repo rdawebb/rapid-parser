@@ -1,0 +1,50 @@
+---
+source: tests/mbox.rs
+expression: records
+---
+[
+  {
+    "attachments": [],
+    "body_text": "First line.\nFrom here the separator is escaped.\n>From here it was already quoted.\n\n",
+    "cc": [],
+    "date": "2026-10-26T10:00:00Z",
+    "from": [
+      {
+        "address": "alice@example.com",
+        "name": "Alice"
+      }
+    ],
+    "in_reply_to": [],
+    "message_id": "mbox-quoted@example.com",
+    "references": [],
+    "subject": "Quoted From lines",
+    "to": [
+      {
+        "address": "bob@example.org",
+        "name": "Bob"
+      }
+    ]
+  },
+  {
+    "attachments": [],
+    "body_text": "Last line, no newline.",
+    "cc": [],
+    "date": "2026-10-26T11:00:00Z",
+    "from": [
+      {
+        "address": "bob@example.org",
+        "name": "Bob"
+      }
+    ],
+    "in_reply_to": [],
+    "message_id": "mbox-last@example.com",
+    "references": [],
+    "subject": "No trailing newline",
+    "to": [
+      {
+        "address": "alice@example.com",
+        "name": "Alice"
+      }
+    ]
+  }
+]
