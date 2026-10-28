@@ -1,4 +1,4 @@
-//! Parses RFC 5322 / MIME mail into a Record struct, or optionally NDJSON
+//! Parses RFC 5322 / MIME mail into a Record struct, and optionally NDJSON
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -8,7 +8,7 @@ use std::path::Path;
 use mail_parser::decoders::html::html_to_text;
 use mail_parser::mailbox::maildir::{Flag, FolderIterator};
 use mail_parser::{
-    AddressList, HeaderForm, HeaderName, Message, MessageBuffers, MessageParser, PartKind,
+    AddressList, DateTime, HeaderForm, HeaderName, Message, MessageBuffers, MessageParser, PartKind,
 };
 use memchr::{memchr, memmem};
 use memmap2::Mmap;
@@ -22,8 +22,10 @@ pub struct Record<'a> {
     pub from: Vec<Address<'a>>,
     pub to: Vec<Address<'a>>,
     pub cc: Vec<Address<'a>>,
-    /// RFC 3339
-    pub date: Option<String>,
+
+    /// Serialised as RFC 3339
+    #[serde(serialize_with = "rfc3339")]
+    pub date: Option<DateTime>,
     pub in_reply_to: Vec<&'a str>,
     pub references: Vec<&'a str>,
     pub body_text: Option<Cow<'a, str>>,
@@ -63,7 +65,7 @@ pub fn record<'a>(msg: &'a Message<'_>) -> Record<'a> {
         from: addrs(msg.from()),
         to: addrs(msg.to()),
         cc: addrs(msg.cc()),
-        date: msg.date().map(|d| d.to_rfc3339()),
+        date: msg.date(),
         in_reply_to: msg
             .in_reply_to()
             .map_or_else(Vec::new, |l| l.iter().collect()),
@@ -84,6 +86,47 @@ pub fn record<'a>(msg: &'a Message<'_>) -> Record<'a> {
             })
             .collect(),
     }
+}
+
+/// `DateTime::to_rfc3339` without `format!` and allocation
+fn rfc3339<S: serde::Serializer>(date: &Option<DateTime>, s: S) -> Result<S::Ok, S::Error> {
+    let Some(d) = date else {
+        return s.serialize_none();
+    };
+    // Too wide for the fixed layout
+    if d.year > 9999 {
+        return s.serialize_some(&d.to_rfc3339());
+    }
+
+    let mut b = *b"0000-00-00T00:00:00+00:00";
+    for (i, p) in [1000, 100, 10, 1].into_iter().enumerate() {
+        b[i] = b'0' + (d.year / p % 10) as u8;
+    }
+    for (at, n) in [
+        (5, d.month),
+        (8, d.day),
+        (11, d.hour),
+        (14, d.minute),
+        (17, d.second),
+        (20, d.tz_hour),
+        (23, d.tz_minute),
+    ] {
+        if n > 99 {
+            return s.serialize_some(&d.to_rfc3339());
+        }
+        b[at] = b'0' + n / 10;
+        b[at + 1] = b'0' + n % 10;
+    }
+    let len = if d.tz_hour == 0 && d.tz_minute == 0 {
+        b[19] = b'Z';
+        20
+    } else {
+        if d.tz_before_gmt {
+            b[19] = b'-';
+        }
+        25
+    };
+    s.serialize_some(std::str::from_utf8(&b[..len]).expect("ASCII"))
 }
 
 /// The first text body part, CRLF as LF; mail-parser's `html_to_text` breaks
@@ -308,4 +351,39 @@ pub fn write_ndjson<'a>(
         out.write_all(b"\n")?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use mail_parser::DateTime;
+
+    #[test]
+    fn rfc3339_matches_mail_parser() {
+        #[derive(serde::Serialize)]
+        struct D(#[serde(serialize_with = "super::rfc3339")] Option<DateTime>);
+
+        let d = |year, tz_before_gmt, tz_hour, tz_minute| DateTime {
+            year,
+            month: 3,
+            day: 9,
+            hour: 7,
+            minute: 5,
+            second: 59,
+            tz_before_gmt,
+            tz_hour,
+            tz_minute,
+        };
+        for date in [
+            d(2026, false, 0, 0),
+            d(2026, true, 0, 0),
+            d(987, true, 5, 30),
+            d(2019, false, 1, 0),
+            d(12345, false, 0, 0),
+            d(2026, true, 123, 0),
+        ] {
+            let json = serde_json::to_string(&D(Some(date))).unwrap();
+            assert_eq!(json, format!("\"{}\"", date.to_rfc3339()));
+        }
+        assert_eq!(serde_json::to_string(&D(None)).unwrap(), "null");
+    }
 }

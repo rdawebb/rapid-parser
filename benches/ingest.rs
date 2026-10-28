@@ -142,10 +142,10 @@ fn main() -> io::Result<()> {
             Ok((n, bytes))
         };
         // SAFETY: the corpus isn't modified while the bench runs
-        let map_mbox = |willneed: bool| -> io::Result<Mmap> {
+        let map_mbox = |_willneed: bool| -> io::Result<Mmap> {
             let map = unsafe { Mmap::map(&File::open(&mbox)?)? };
             #[cfg(unix)]
-            if willneed {
+            if _willneed {
                 map.advise(memmap2::Advice::WillNeed)?;
             }
             Ok(map)
