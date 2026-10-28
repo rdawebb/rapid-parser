@@ -8,9 +8,10 @@ use std::path::Path;
 use mail_parser::decoders::html::html_to_text;
 use mail_parser::mailbox::maildir::{Flag, FolderIterator};
 use mail_parser::{
-    AddressList, DateTime, HeaderForm, HeaderName, Message, MessageBuffers, MessageParser, PartKind,
+    AddressList, DateTime, Encoding, HeaderForm, HeaderName, Message, MessageBuffers,
+    MessageParser, MessagePart, PartKind,
 };
-use memchr::{memchr, memmem};
+use memchr::{memchr, memchr_iter, memmem};
 use memmap2::Mmap;
 use serde::Serialize;
 
@@ -42,8 +43,12 @@ pub struct Address<'a> {
 pub struct AttachmentMetadata<'a> {
     pub name: Option<&'a str>,
     pub content_type: Option<String>,
-    /// Decoded size in bytes, computed without decoding
-    pub size: usize,
+
+    /// Encoded size in bytes
+    pub encoded_size: usize,
+
+    /// Decoded size in bytes; base64 is calculated from its length
+    pub decoded_size: usize,
     pub inline: bool,
 }
 
@@ -81,10 +86,31 @@ pub fn record<'a>(msg: &'a Message<'_>) -> Record<'a> {
                     Some(sub) => format!("{}/{sub}", ct.ctype()),
                     None => ct.ctype().to_owned(),
                 }),
-                size: p.decoded_len(),
+                encoded_size: p.raw_body().len(),
+                decoded_size: decoded_size(p),
                 inline: p.is_inline(),
             })
             .collect(),
+    }
+}
+
+/// Counts line breaks and padding to calculate size without actually decoding
+fn decoded_size(p: MessagePart<'_>) -> usize {
+    match p.encoding() {
+        // Assumes only line breaks between base64 characters, so other whitespace
+        // or junk overcounts
+        Encoding::Base64 => {
+            let body = p.raw_body().trim_ascii_end();
+            let breaks = memchr_iter(b'\n', body).count() + memchr_iter(b'\r', body).count();
+            let pad = body
+                .iter()
+                .rev()
+                .take(2)
+                .take_while(|&&b| b == b'=')
+                .count();
+            (body.len() - breaks - pad) * 3 / 4
+        }
+        _ => p.decoded_len(),
     }
 }
 
@@ -401,6 +427,30 @@ mod tests {
             assert_eq!(json, format!("\"{}\"", date.to_rfc3339()));
         }
         assert_eq!(serde_json::to_string(&D(None)).unwrap(), "null");
+    }
+
+    #[test]
+    fn base64_decoded_size_matches_decoded_len() {
+        let parser = mail_parser::MessageParser::new();
+        for body in [
+            "",
+            "TWFu",
+            "TWE=",
+            "TQ==",
+            "TWFuTWFu\r\nTWFuTWE=\r\n",
+            "TWFuTWFu\nTQ==\n",
+            "TWFuTWFu\r\nTW",
+        ] {
+            let raw = format!(
+                "Content-Type: multipart/mixed; boundary=b\r\n\r\n--b\r\n\
+                 Content-Type: application/octet-stream\r\n\
+                 Content-Disposition: attachment\r\n\
+                 Content-Transfer-Encoding: base64\r\n\r\n{body}\r\n--b--\r\n"
+            );
+            let msg = parser.parse(raw.as_bytes()).unwrap();
+            let p = msg.attachments().next().unwrap();
+            assert_eq!(super::decoded_size(p), p.decoded_len(), "{body:?}");
+        }
     }
 
     #[test]

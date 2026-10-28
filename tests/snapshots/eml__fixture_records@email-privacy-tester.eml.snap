@@ -27,25 +27,29 @@ input_file: tests/fixtures/eml/email-privacy-tester.eml
     {
       "name": "5e175f8d8af4d70022fc5832.css",
       "content_type": "text/css",
-      "size": 124,
+      "encoded_size": 130,
+      "decoded_size": 124,
       "inline": true
     },
     {
       "name": "5e175f8d8af4d70022fc5832.svg",
       "content_type": "image/svg+xml",
-      "size": 0,
+      "encoded_size": 0,
+      "decoded_size": 0,
       "inline": true
     },
     {
       "name": "5e175f8d8af4d70022fc5832-2.svg",
       "content_type": "image/svg+xml",
-      "size": 0,
+      "encoded_size": 0,
+      "decoded_size": 0,
       "inline": true
     },
     {
       "name": "<script>alert(unescape(/XSS(2) f%6fund. Please repo%72t to xss@emailprivacytester.com/.source))</script>.5e175f8d8af4d70022fc5832.png",
       "content_type": "image/png",
-      "size": 0,
+      "encoded_size": 0,
+      "decoded_size": 0,
       "inline": true
     }
   ]

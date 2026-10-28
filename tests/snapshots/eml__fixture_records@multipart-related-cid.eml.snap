@@ -27,7 +27,8 @@ input_file: tests/fixtures/eml/multipart-related-cid.eml
     {
       "name": "logo.png",
       "content_type": "image/png",
-      "size": 70,
+      "encoded_size": 96,
+      "decoded_size": 70,
       "inline": true
     }
   ]
