@@ -269,22 +269,35 @@ pub fn read_mbox(
 /// line before the next one; each borrows the buffer, unless it has a `>From `
 /// line to unquote; anything before the first `From ` line is skipped
 fn mbox_messages(buf: &[u8]) -> impl Iterator<Item = Cow<'_, [u8]>> {
-    let separator = memmem::Finder::new(b"\nFrom ");
     let mut rest = match buf.starts_with(b"From ") {
         true => buf,
-        false => separator.find(buf).map_or(&[][..], |i| &buf[i + 1..]),
+        false => memmem::find(buf, b"\nFrom ").map_or(&[][..], |i| &buf[i + 1..]),
     };
+    let from = memmem::Finder::new(b"From ");
     std::iter::from_fn(move || {
         if rest.is_empty() {
             return None;
         }
 
-        // rest starts with a 'From' line; from its own \n, so an empty message
-        // still finds the next one
+        // Scan finds the next `From ` line (at `body`, if this message is
+        // empty) and any `>From ` lines to unquote
         let body = memchr(b'\n', rest).map_or(rest.len(), |i| i + 1);
-        let next = separator
-            .find(&rest[body - 1..])
-            .map_or(rest.len(), |i| body + i);
+        let (mut next, mut quoted) = (rest.len(), false);
+
+        for hit in from.find_iter(&rest[body..]).map(|i| body + i) {
+            match rest[hit - 1] {
+                b'\n' => {
+                    next = hit;
+                    break;
+                }
+                // rest[body - 1] is a \n, so a run of '>' always stops at one
+                b'>' if !quoted => {
+                    let before = rest[..hit].iter().rposition(|&b| b != b'>');
+                    quoted = before.is_some_and(|i| rest[i] == b'\n');
+                }
+                _ => {}
+            }
+        }
         let mut msg = &rest[body..next];
         rest = &rest[next..];
         if msg.ends_with(b"\r\n\r\n") {
@@ -292,12 +305,16 @@ fn mbox_messages(buf: &[u8]) -> impl Iterator<Item = Cow<'_, [u8]>> {
         } else if msg.ends_with(b"\n\n") {
             msg = &msg[..msg.len() - 1];
         }
-        Some(unquote(msg))
+
+        Some(match quoted {
+            true => Cow::Owned(unquote(msg)),
+            false => Cow::Borrowed(msg),
+        })
     })
 }
 
 /// mboxrd: a line of `>From `, `>>From `, ... loses one `>`
-fn unquote(msg: &[u8]) -> Cow<'_, [u8]> {
+fn unquote(msg: &[u8]) -> Vec<u8> {
     let (mut out, mut copied) = (Vec::new(), 0);
 
     for hit in memmem::find_iter(msg, b">From ") {
@@ -307,11 +324,10 @@ fn unquote(msg: &[u8]) -> Cow<'_, [u8]> {
             copied = hit + 1;
         }
     }
-    if copied == 0 {
-        return Cow::Borrowed(msg);
-    }
+    // Only called once mbox_messages has seen a line to unquote
+    debug_assert!(copied > 0);
     out.extend_from_slice(&msg[copied..]);
-    Cow::Owned(out)
+    out
 }
 
 /// mail-parser only fails on inputs of 4 GiB or more; names the message
@@ -385,5 +401,13 @@ mod tests {
             assert_eq!(json, format!("\"{}\"", date.to_rfc3339()));
         }
         assert_eq!(serde_json::to_string(&D(None)).unwrap(), "null");
+    }
+
+    #[test]
+    fn mbox_split_and_unquote() {
+        // Preamble, a quoted line, an empty message, a mid-line `>From `
+        let buf = b"junk\nFrom a\n>From x\nFrom b\nFrom c\nsee a>From y\n";
+        let msgs: Vec<_> = super::mbox_messages(buf).collect();
+        assert_eq!(msgs, [&b"From x\n"[..], b"", b"see a>From y\n"]);
     }
 }
