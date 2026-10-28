@@ -141,9 +141,18 @@ fn main() -> io::Result<()> {
             }
             Ok((n, bytes))
         };
-        let file = File::open(&mbox)?;
         // SAFETY: the corpus isn't modified while the bench runs
-        let map = unsafe { Mmap::map(&file)? };
+        let map_mbox = |willneed: bool| -> io::Result<Mmap> {
+            let map = unsafe { Mmap::map(&File::open(&mbox)?)? };
+            #[cfg(unix)]
+            if willneed {
+                map.advise(memmap2::Advice::WillNeed)?;
+            }
+            Ok(map)
+        };
+        // Reused across runs, so its pages are already faulted in: for the
+        // split cases only, which time the scan and copy
+        let map = map_mbox(false)?;
         run("mbox split, no copy", RUNS, &|| {
             let n = usize::from(map.starts_with(b"From "))
                 + memchr::memmem::find_iter(&map, b"\nFrom ").count();
@@ -158,11 +167,15 @@ fn main() -> io::Result<()> {
         run("mbox read+parse_with", RUNS, &|| {
             split(&mut &fs::read(&mbox)?[..], &parsing(&parser))
         })?;
+        // Mapped afresh each run, as read_mbox does
         run("mbox mmap+parse_with", RUNS, &|| {
-            split(&mut &map[..], &parsing(&parser))
+            split(&mut &map_mbox(false)?[..], &parsing(&parser))
+        })?;
+        run("mbox mmap WillNeed+parse_with", RUNS, &|| {
+            split(&mut &map_mbox(true)?[..], &parsing(&parser))
         })?;
         run("mbox mmap+parse_with, raw Received", RUNS, &|| {
-            split(&mut &map[..], &parsing(&raw_received))
+            split(&mut &map_mbox(true)?[..], &parsing(&raw_received))
         })?;
         run("mbox read_mbox+ndjson", RUNS, &|| {
             let mut n = 0;
@@ -173,7 +186,7 @@ fn main() -> io::Result<()> {
             Ok((n, map.len()))
         })?;
         run("mbox mmap+mailparse", RUNS, &|| {
-            split(&mut &map[..], &|raw, _| {
+            split(&mut &map_mbox(true)?[..], &|raw, _| {
                 _ = black_box(mailparse::parse_mail(raw))
             })
         })?;

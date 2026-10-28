@@ -1,14 +1,17 @@
-//! Parses RFC 5322 / MIME mail into NDJSON records, to be indexed.
+//! Parses RFC 5322 / MIME mail into a Record struct, or optionally NDJSON
 
 use std::borrow::Cow;
 use std::fs::File;
-use std::io::{self, BufReader};
+use std::io;
 use std::path::Path;
 
 use mail_parser::decoders::html::html_to_text;
 use mail_parser::mailbox::maildir::{Flag, FolderIterator};
-use mail_parser::mailbox::mbox::MessageIterator;
-use mail_parser::{AddressList, Message, MessageBuffers, MessageParser, PartKind};
+use mail_parser::{
+    AddressList, HeaderForm, HeaderName, Message, MessageBuffers, MessageParser, PartKind,
+};
+use memchr::{memchr, memmem};
+use memmap2::Mmap;
 use serde::Serialize;
 
 /// One message per Record
@@ -53,6 +56,7 @@ pub fn record<'a>(msg: &'a Message<'_>) -> Record<'a> {
             })
             .collect()
     };
+
     Record {
         message_id: msg.message_id(),
         subject: msg.subject(),
@@ -87,6 +91,7 @@ pub fn record<'a>(msg: &'a Message<'_>) -> Record<'a> {
 fn body_text<'a>(msg: &'a Message<'_>) -> Option<Cow<'a, str>> {
     let part = msg.text_body().next()?;
     let text = part.text()?;
+
     match part.kind() {
         PartKind::Html => {
             let plain = html_to_text(&break_blocks(&text));
@@ -126,6 +131,7 @@ const BLOCK_TAGS: [&str; 14] = [
 fn break_blocks(html: &str) -> String {
     let mut out = String::with_capacity(html.len() + html.len() / 8);
     let mut rest = html;
+
     while let Some(i) = rest.find('<') {
         out.push_str(&rest[..i]);
         rest = &rest[i + 1..];
@@ -159,8 +165,9 @@ pub fn read_maildir(
     root: impl AsRef<Path>,
     mut f: impl FnMut(MaildirRecord<'_>) -> io::Result<()>,
 ) -> io::Result<()> {
-    let parser = MessageParser::default();
+    let parser = MessageParser::new().header(HeaderName::Received, HeaderForm::Raw);
     let mut buffers = MessageBuffers::new();
+
     for folder in FolderIterator::new(root.as_ref(), Some("."))? {
         let folder = folder?;
         let name = folder.name().unwrap_or("INBOX").to_owned();
@@ -169,6 +176,7 @@ pub fn read_maildir(
             let msg = parse(&parser, entry.contents(), &mut buffers, || {
                 entry.path().display().to_string()
             })?;
+
             f(MaildirRecord {
                 folder: &name,
                 flags: entry.flags().iter().map(|&fl| flag_name(fl)).collect(),
@@ -180,24 +188,87 @@ pub fn read_maildir(
     Ok(())
 }
 
-/// Calls `f` with the record of every message in an mbox file; mail-parser uses
-/// mboxrd unquoting
+/// Calls `f` with the record of every message in an mbox file, with mboxrd
+/// unquoting; the file is mapped, so shouldn't be truncated or rewritten
+/// while this runs; appending to it is fine
 pub fn read_mbox(
     path: impl AsRef<Path>,
     mut f: impl FnMut(Record<'_>) -> io::Result<()>,
 ) -> io::Result<()> {
     let path = path.as_ref();
-    let parser = MessageParser::default();
+    let file = File::open(path)?;
+
+    // Mapping an empty file fails on Windows
+    if file.metadata()?.len() == 0 {
+        return Ok(());
+    }
+
+    // SAFETY: the caller doesn't truncate or rewrite the file
+    let map = unsafe { Mmap::map(&file)? };
+
+    // Read-ahead; only a hint, so a failure is ignored
+    #[cfg(unix)]
+    let _ = map.advise(memmap2::Advice::WillNeed);
+    let parser = MessageParser::new().header(HeaderName::Received, HeaderForm::Raw);
     let mut buffers = MessageBuffers::new();
-    for (i, entry) in MessageIterator::new(BufReader::new(File::open(path)?)).enumerate() {
-        let entry = entry?;
-        let msg = parse(&parser, entry.contents(), &mut buffers, || {
+
+    for (i, raw) in mbox_messages(&map).enumerate() {
+        let msg = parse(&parser, &raw, &mut buffers, || {
             format!("{} (message {})", path.display(), i + 1)
         })?;
         f(record(&msg))?;
         buffers = msg.into_buffers();
     }
     Ok(())
+}
+
+/// The messages of an mbox buffer, without their `From ` line or the blank
+/// line before the next one; each borrows the buffer, unless it has a `>From `
+/// line to unquote; anything before the first `From ` line is skipped
+fn mbox_messages(buf: &[u8]) -> impl Iterator<Item = Cow<'_, [u8]>> {
+    let separator = memmem::Finder::new(b"\nFrom ");
+    let mut rest = match buf.starts_with(b"From ") {
+        true => buf,
+        false => separator.find(buf).map_or(&[][..], |i| &buf[i + 1..]),
+    };
+    std::iter::from_fn(move || {
+        if rest.is_empty() {
+            return None;
+        }
+
+        // rest starts with a 'From' line; from its own \n, so an empty message
+        // still finds the next one
+        let body = memchr(b'\n', rest).map_or(rest.len(), |i| i + 1);
+        let next = separator
+            .find(&rest[body - 1..])
+            .map_or(rest.len(), |i| body + i);
+        let mut msg = &rest[body..next];
+        rest = &rest[next..];
+        if msg.ends_with(b"\r\n\r\n") {
+            msg = &msg[..msg.len() - 2];
+        } else if msg.ends_with(b"\n\n") {
+            msg = &msg[..msg.len() - 1];
+        }
+        Some(unquote(msg))
+    })
+}
+
+/// mboxrd: a line of `>From `, `>>From `, ... loses one `>`
+fn unquote(msg: &[u8]) -> Cow<'_, [u8]> {
+    let (mut out, mut copied) = (Vec::new(), 0);
+
+    for hit in memmem::find_iter(msg, b">From ") {
+        let before = msg[..hit].iter().rposition(|&b| b != b'>');
+        if before.is_none_or(|i| msg[i] == b'\n') {
+            out.extend_from_slice(&msg[copied..hit]);
+            copied = hit + 1;
+        }
+    }
+    if copied == 0 {
+        return Cow::Borrowed(msg);
+    }
+    out.extend_from_slice(&msg[copied..]);
+    Cow::Owned(out)
 }
 
 /// mail-parser only fails on inputs of 4 GiB or more; names the message

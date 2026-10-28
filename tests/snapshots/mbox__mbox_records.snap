@@ -5,7 +5,7 @@ expression: records
 [
   {
     "attachments": [],
-    "body_text": "First line.\nFrom here the separator is escaped.\n>From here it was already quoted.\n\n",
+    "body_text": "First line.\nFrom here the separator is escaped.\n>From here it was already quoted.\n",
     "cc": [],
     "date": "2026-10-26T10:00:00Z",
     "from": [
